@@ -1,0 +1,134 @@
+version: "3.9"
+
+# ФСП Платформа — поднятие стенда одной командой: docker compose up --build
+# Перед запуском скопируйте .env.example в .env и заполните значения.
+
+services:
+  db:
+    image: postgres:15
+    container_name: fsp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fsp_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./demo-data/sql/seed-questions.sql:/seed/seed-questions.sql:ro
+      - ./demo-data/sql/seed-demo.sql:/seed/seed-demo.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-fsp_platform}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  maildev:
+    image: maildev/maildev:2.1.0
+    container_name: fsp_maildev
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP — сюда шлёт письма API
+      - "1080:1080"   # веб-интерфейс — здесь смотрите письма
+
+  api:
+    build:
+      # контекст = папка проекта (там лежат .csproj, Program.cs и Dockerfile.api)
+      context: ./FspPlatformApi/FspPlatformApi
+      dockerfile: Dockerfile.api
+    container_name: fsp_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      maildev:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB:-fsp_platform};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Key: ${JWT_KEY:?Задайте JWT_KEY в .env}
+      Jwt__Issuer: ${JWT_ISSUER:-fsp-platform}
+      Jwt__Audience: ${JWT_AUDIENCE:-fsp-platform}
+      Auth__RequireConfirmedEmail: "false"
+      Cors__Origins__0: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      OpenAI__BaseUrl: ${GIGACHAT_BASEURL:-https://gigachat.devices.sberbank.ru/api/v1}
+      OpenAI__Model: ${GIGACHAT_MODEL:-GigaChat}
+      OpenAI__ApiKey: ${GIGACHAT_API_KEY:-}
+      App__PublicUrl: ${APP_PUBLIC_URL:-http://localhost:3000}
+      Smtp__Host: maildev
+      Smtp__Port: "1025"
+      Smtp__User: ""
+      Smtp__Password: ""
+      Smtp__From: no-reply@fsp-platform.ru
+      Smtp__NoTls: "true"          # Maildev не поддерживает SSL/STARTTLS — только plain
+      CodeRunner__WorkRoot: /coderuns
+      CodeRunner__Volume: coderuns_data
+    ports:
+      - "8080:8080"
+    volumes:
+      - api_uploads:/app/Data
+      - coderuns_data:/coderuns     # общий том: API пишет код, раннеры его исполняют
+      - //var/run/docker.sock:/var/run/docker.sock
+
+  frontend:
+    build:
+      context: ./FspPlatformWeb
+      dockerfile: Dockerfile.frontend
+    container_name: fsp_frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+
+  # ---------------------------------------------------------------------------
+  # Образы для code-раннера (python, javascript, csharp, java, go, cpp).
+  # Это НЕ постоянные сервисы: нужны только чтобы подтянуть образы одной командой.
+  # Один раз перед первым запуском:
+  #   docker compose --profile runner pull
+  # После подтяжки профиль можно не использовать — раннер сам делает
+  # краткоживущие `docker run --rm` из этих образов при проверке code-задач.
+  # ---------------------------------------------------------------------------
+  runner-python:
+    image: python:3.11-slim
+    profiles: ["runner"]
+    container_name: fsp_runner_python
+    entrypoint: ["sh", "-c", "echo 'runner image python:3.11-slim — ok'"]
+
+  runner-javascript:
+    image: node:20-alpine
+    profiles: ["runner"]
+    container_name: fsp_runner_javascript
+    entrypoint: ["sh", "-c", "echo 'runner image node:20-alpine — ok'"]
+
+  runner-csharp:
+    image: mono:6
+    profiles: ["runner"]
+    container_name: fsp_runner_csharp
+    entrypoint: ["sh", "-c", "echo 'runner image mono:6 — ok'"]
+
+  runner-java:
+    image: eclipse-temurin:17-jdk
+    profiles: ["runner"]
+    container_name: fsp_runner_java
+    entrypoint: ["sh", "-c", "echo 'runner image eclipse-temurin:17-jdk — ok'"]
+
+  runner-go:
+    image: golang:1.22-alpine
+    profiles: ["runner"]
+    container_name: fsp_runner_go
+    entrypoint: ["sh", "-c", "echo 'runner image golang:1.22-alpine — ok'"]
+
+  runner-cpp:
+    image: gcc:13
+    profiles: ["runner"]
+    container_name: fsp_runner_cpp
+    entrypoint: ["sh", "-c", "echo 'runner image gcc:13 — ok'"]
+
+volumes:
+  db_data:
+  api_uploads:
+  coderuns_data:
+    name: coderuns_data            # фиксированное имя — его знает CodeRunnerService

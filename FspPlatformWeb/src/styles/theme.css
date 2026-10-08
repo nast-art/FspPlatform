@@ -1,0 +1,1066 @@
+/* ==================== Навигация ==================== */
+
+/* верхняя панель (общий шаблон) */
+.topnav {
+  display: flex; align-items: center; gap: 20px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.topnav .navlink { color: var(--muted); font-size: 13px; text-decoration: none; }
+.topnav .navlink.on {
+  color: var(--white);
+  border-bottom: 2px solid var(--blue);
+  padding-bottom: 2px;
+}
+.topnav .spacer { flex: 1; }
+
+/* каркас кабинета: сайдбар + контент */
+.layout {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: calc(100vh - 120px);
+}
+
+/* ==================== Боковое меню ==================== */
+.sidenav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidenav a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 2px;
+}
+
+.sidenav a:hover {
+  background: var(--panel2);
+  color: var(--text);
+}
+
+.sidenav a.on {
+  background: var(--blue-soft);
+  color: var(--text);
+}
+
+/* Счётчик в боковом меню (непрочитанные приглашения) */
+.menu-badge {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 5px;
+  margin-right: 2px;
+  border-radius: 9px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.content { padding: 26px 28px; }
+
+/* ==================== Кнопки ==================== */
+.btn {
+  display: inline-block;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  transition: opacity .15s;
+}
+.btn:hover { opacity: .88; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--white); }
+.btn.red   { background: var(--red); }
+.btn.sm    { padding: 6px 12px; font-size: 12px; }
+
+/* ==================== Поля ввода ==================== */
+.input,
+select.input,
+textarea.input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--white);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.input:focus { outline: none; border-color: var(--blue); }
+
+/* ==================== Карточки ==================== */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+/* ==================== Бейджи статусов ==================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  color: var(--gray);
+  white-space: nowrap;
+}
+.badge .d { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.badge.blue  { background: var(--blue-soft); border-color: var(--blue); color: var(--white); }
+.badge.blue .d  { background: var(--blue); }
+.badge.red   { background: var(--red-soft);  border-color: var(--red);  color: var(--white); }
+.badge.red .d   { background: var(--red); }
+.badge.green { background: var(--green-soft); border-color: var(--green); color: var(--white); }
+.badge.green .d { background: var(--green); }
+/* Акцентный статус: «на оценке» — требует действия работодателя (фирменный фиолетовый) */
+.badge.accent { background: var(--accent-soft); border-color: var(--accent); color: var(--white); }
+.badge.accent .d { background: var(--accent); }
+
+/* ==================== Теги (стек, фильтры, пилюли) ==================== */
+.tag {
+  display: inline-block;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  padding: 3px 9px;
+  color: var(--gray);
+  margin: 0 6px 6px 0;
+}
+.tag.sel { background: var(--blue-soft); border-color: var(--blue); color: var(--white); }
+
+/* навигация-пилюли над списками */
+.pill-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.pill-nav .tag { cursor: pointer; }
+
+/* ==================== Таблицы ==================== */
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.tbl td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: none; }
+.rank { font-weight: 800; color: var(--blue); font-size: 16px; }
+
+/* ==================== Прогресс / степпер / аватар ==================== */
+.progress { height: 6px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--blue); }
+
+.stepper { display: flex; gap: 8px; margin-bottom: 24px; }
+.stepper i { flex: 1; height: 4px; border-radius: 3px; background: var(--panel2); }
+.stepper i.done { background: var(--blue); }
+
+.avatar {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: var(--blue);
+  flex-shrink: 0;
+}
+
+/* ==================== Уведомления и списки ключ-значение ==================== */
+.notice {
+  background: var(--blue-soft);
+  border: 1px solid var(--blue);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.notice.red { background: var(--red-soft); border-color: var(--red); }
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 13px;
+}
+.kv:last-child { border: none; }
+.kv .k { color: var(--muted); }
+
+.stat   { display: flex; gap: 8px; align-items: baseline; }
+.stat .v { font-size: 26px; font-weight: 800; }
+.stat .l { font-size: 12px; color: var(--muted); }
+
+/* ==================== Переключатель ==================== */
+.toggle {
+  width: 38px; height: 20px;
+  border-radius: 12px;
+  background: var(--blue);
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle i {
+  position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+.toggle.off { background: var(--panel2); }
+.toggle.off i { right: auto; left: 2px; }
+
+/* ==================== Пагинация ==================== */
+.pager { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
+.pager span {
+  min-width: 32px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--gray);
+  cursor: pointer;
+}
+.pager span.cur { border-color: var(--blue); background: var(--blue-soft); color: var(--white); }
+.pager span.dots { border: none; color: var(--muted); cursor: default; }
+
+/* Пагинация: навигационные кнопки */
+.pager span.nav {
+  padding: 6px 16px;
+  font-weight: 700;
+  user-select: none;
+}
+.pager span.nav.disabled {
+  opacity: .3;
+  cursor: default;
+}
+.pager span:not(.dots):not(.cur):hover {
+  border-color: var(--muted);
+  color: var(--white);
+}
+
+/* ==================== Лого ==================== */
+.logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 18px; }
+
+/* ==================== Ровный ряд с чекбоксом ==================== */
+.check-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.4;
+}
+.check-row input[type='checkbox'] {
+  accent-color: var(--blue);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ==================== Шапка страницы (title + actions) ==================== */
+/* Единый паттерн для всех кабинетов: заголовок слева, действия справа,
+   компактные отступы — без «висящих» полос. */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.page-head .h1 { margin-bottom: 2px; }
+.page-head .sub { margin-bottom: 0; }
+.page-head .head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ==================== Строка-переключатель с пояснением ==================== */
+.vis-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.vis-row:hover { border-color: var(--blue); }
+.vis-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vis-label { font-size: 13px; color: var(--white); line-height: 1.4; }
+.vis-hint  { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+/* ==================== Карточка резюме (PDF) ==================== */
+.resume-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.resume-info { min-width: 260px; flex: 1; }
+.resume-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ==================== Загрузка файла (input type=file) ==================== */
+.file-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.file-pick input[type="file"] {
+  display: none;
+}
+.file-pick .file-btn {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--white);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color .15s;
+  white-space: nowrap;
+}
+.file-pick:hover .file-btn { border-color: var(--blue); }
+.file-pick .file-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==================== Вакансии: плотные карточки ==================== */
+.vac-card { padding: 16px 18px; }
+.vac-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.vac-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  transition: color .15s;
+}
+.vac-title:hover { color: var(--blue); }
+
+/* Зарплата — как на hh/LinkedIn: белым полужирным, числа крупнее знаков */
+.vac-salary {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  white-space: nowrap;
+  letter-spacing: .01em;
+}
+.vac-meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.vac-tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.vac-foot {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.badge.new { background: var(--blue-soft); color: var(--blue); border-color: var(--blue); }
+
+/* ==================== Строка фильтров ==================== */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+/* Единая высота полей в фильтр-баре */
+.filter-bar .input {
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Фокус: мягкое свечение, как в хороших продуктах */
+.filter-bar .input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-soft);
+}
+
+/* Плейсхолдер не должен кричать */
+.filter-bar .input::placeholder {
+  color: var(--muted);
+  opacity: .8;
+}
+
+/* Раскладка: поиск гибкий, select фиксированной ширины */
+.filter-bar input.input { flex: 1 1 220px; min-width: 140px; }
+.filter-bar select.input { flex: 0 1 220px; min-width: 180px; }
+
+/* Select: убираем нативную стрелку, ставим свою — чтобы не наслаивалась на текст */
+.filter-bar select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a9d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* Выпадающий список в тёмной теме */
+.filter-bar select.input option {
+  background: var(--panel);
+  color: var(--white);
+}
+
+/* ==================== Модальные окна ==================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 16px;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.modal {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.modal-close:hover {
+  color: var(--white);
+  background: var(--panel2);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* ==================== Toast-уведомления ==================== */
+/* Заметные: цветная обводка + иконка + крупный шрифт + тень.
+   Внизу справа — стандартное место, но теперь сложно пропустить. */
+.toast-wrap {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 200;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  min-width: 320px;
+  max-width: 420px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  animation: toast-in 0.22s ease-out;
+}
+
+/* Цвет рамки + лёгкий цветной оттенок фона для мгновенного считывания типа */
+.toast.success {
+  border-color: var(--green);
+  border-left-width: 4px;
+  background: linear-gradient(0deg, rgba(46, 204, 113, 0.08), rgba(46, 204, 113, 0.08)), var(--panel);
+}
+
+.toast.error {
+  border-color: var(--red);
+  border-left-width: 4px;
+  background: linear-gradient(0deg, rgba(231, 76, 60, 0.10), rgba(231, 76, 60, 0.10)), var(--panel);
+}
+
+/* Иконка слева: без эмодзи — чистый глиф, как в системных уведомлениях */
+.toast .toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.toast.success .toast-icon {
+  color: var(--green);
+  border: 1.5px solid var(--green);
+}
+
+.toast.error .toast-icon {
+  color: var(--red);
+  border: 1.5px solid var(--red);
+}
+
+.toast .toast-msg {
+  flex: 1;
+}
+
+/* Кнопка закрытия — чтобы пользователь сам решил, когда убрать */
+.toast .toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.toast .toast-close:hover {
+  color: var(--white);
+  background: var(--panel2);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==================== Карточки задач работодателя ==================== */
+.task-card {
+  margin-bottom: 12px;
+}
+
+.task-card .task-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.task-card .task-desc {
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+/* СТРОКА СТАТИСТИКИ — flex + gap между пунктами.
+   Класс глобальный (не вложен в .task-card), потому что страница
+   использует <div className="card"> + className="task-stats". */
+.task-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.task-stats b {
+  color: var(--white);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.task-card.archived {
+  opacity: 0.55;
+}
+
+.task-card .task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Строка кандидата в модальном окне назначения */
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.pick-row:hover {
+  border-color: var(--blue);
+}
+
+.pick-row .pick-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-row .pick-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pick-row .pick-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Ответ кандидата: текст решения */
+.answer-text {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  margin: 10px 0;
+}
+
+/* ==================== Тихая сервисная кнопка (quiet-danger) ==================== */
+/* Для второстепенных действий в шапке карточек (отмена назначения и т.п.):
+   в покое — серый текст без рамки, не спорит с контентом;
+   при наведении — красный текст + красный контур + мягкая подложка.
+   Паттерн GitHub/Linear: действие есть, но не кричит. */
+.btn.quiet-danger {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--gray);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  flex-shrink: 0;
+}
+
+.btn.quiet-danger:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+
+.btn.quiet-danger:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+/* ==================== Формы: секционная карточка (вакансии, задачи) ==================== */
+/* Inline-форма без модала: секции с микро-заголовками, двухколоночная сетка,
+   липкая панель действий. Компактные отступы — без «воздушных» полей. */
+.form-card {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.form-card .form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.form-card .form-head .form-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-card .form-head .form-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.form-card .form-head .form-close:hover {
+  color: var(--white);
+  background: var(--panel2);
+}
+
+.form-card .form-body {
+  padding: 2px 16px 14px;
+}
+
+/* Поля ввода внутри форм — плотнее, чем глобальные .input */
+.form-card .input {
+  padding: 8px 10px;
+}
+
+/* Микро-заголовок секции */
+.form-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin: 14px 0 8px;
+}
+
+/* Первая секция почти прижата к шапке — сверху лишнего воздуха нет */
+.form-card .form-body .form-section-title:first-child {
+  margin-top: 6px;
+}
+
+/* Двухколоночная сетка полей; .full — во всю ширину */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.form-grid .full {
+  grid-column: 1 / -1;
+}
+
+/* Липкая панель действий */
+.form-sticky {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  padding: 10px 16px;
+}
+
+/* Пара полей в одной строке (зарплата от–до, грейд от–до) */
+.form-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ==================== Колокольчик уведомлений ==================== */
+.bell {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.bell-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 7px;
+  cursor: pointer;
+  position: relative;
+  line-height: 1;
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.bell-btn:hover {
+  color: var(--white);
+  border-color: var(--line);
+  background: var(--panel2);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.bell-panel {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 12px;
+  z-index: 150;
+}
+
+.bell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bell-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  transition: background .15s;
+}
+.bell-item:hover {
+  background: var(--panel2);
+}
+
+.bell-item.unread {
+  background: rgba(99, 102, 241, 0.07);
+  border-left: 2px solid var(--blue);
+  padding-left: 8px;
+}
+
+.bell-item.unread:hover {
+  background: var(--panel2);
+}
+
+/* ==================== Карточка ответа кандидата (TasksPage) ==================== */
+
+/* Имя кандидата-ссылка: как обычный текст, акцент только по наведению */
+a.cand-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+a.cand-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Шапка карточки: аватар + имя слева, мета-информация справа */
+.answer-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.answer-card-head .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.answer-card-head .head-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* «Подвал» карточки: оценка отделена разделителем — карточка визуально завершена */
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.score-row .input {
+  width: 90px;
+}
+
+/* ============================================================ */
+/* ==================== АДАПТИВ (строго в конце файла) ==================== */
+/* ============================================================ */
+/* Правила ниже идут последними в каскаде — на маленьких экранах
+   гарантированно побеждают базовые определения выше. */
+
+/* До 900px: сайдбар перестраивается в горизонтальную полосу */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidenav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .sidenav a { margin-bottom: 6px; }
+}
+
+/* До 640px: колонки схлопываются, таблицы — в карточки */
+@media (max-width: 640px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+  .topnav {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  /* Шапка страницы: действия под заголовком */
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .page-head .head-actions {
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+
+  /* Секционные формы — одна колонка */
+  .form-grid { grid-template-columns: 1fr; }
+
+  /* Модалки почти на весь экран */
+  .modal-overlay { padding: 16px 8px; }
+  .modal-body { padding: 14px; }
+
+  /* Тосты не шире экрана */
+  .toast-wrap {
+    right: 12px;
+    left: 12px;
+  }
+  .toast {
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* Панель колокольчика — по ширине экрана */
+  .bell-panel {
+    position: fixed;
+    top: 56px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  /* Фильтр-бар: поля в столбик */
+  .filter-bar input.input,
+  .filter-bar select.input {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* Таблицы: горизонтальный скролл (для таблиц без data-label) */
+  table.tbl {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Таблицы с data-label: строки превращаются в карточки */
+  .tbl thead { display: none; }
+  .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
+  .tbl tr {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+  .tbl tr:last-child { margin-bottom: 0; }
+  .tbl td {
+    border-bottom: none;
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .tbl td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    flex-shrink: 0;
+  }
+  /* У колонки действий подпись не нужна */
+  .tbl td[data-label=""]::before { content: none; }
+}

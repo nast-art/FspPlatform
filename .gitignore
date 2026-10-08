@@ -1,0 +1,20 @@
+# секреты и локальное окружение
+.env
+**/appsettings.Development.json
+
+# бэкенд
+**/bin/
+**/obj/
+**/.vs/
+*.user
+**/Data/Uploads/
+
+# фронтенд
+**/node_modules/
+**/dist/
+
+# docker / среда
+coderuns/
+*.log
+.vscode/
+.idea/

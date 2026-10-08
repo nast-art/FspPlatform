@@ -1,0 +1,86 @@
+/* ==================== Дизайн-токены (брендбук ФСП) ==================== */
+:root {
+  /* фоны и панели */
+  --bg:      #1B1C21;
+  --panel:   #222329;
+  --panel2:  #26272E;
+  --line:    #33343C;
+
+  /* акценты */
+  --blue:        #402FFF;
+  --blue-soft:   rgba(64, 47, 255, .14);
+  --red:         #EC1035;
+  --red-soft:    rgba(236, 16, 53, .12);
+  --green:       #2FBF71;
+  --green-soft:  rgba(47, 191, 113, .12);  /* подложка под зелёные статусные бейджи */
+  --accent:      #7C5CFF;                   /* фирменный фиолетовый для акцентных статусов */
+  --accent-soft: rgba(124, 92, 255, 0.12);  /* подложка под акцентные бейджи */
+
+  /* текст */
+  --white: #EDEDED;
+  --text:  #EDEDED;  /* алиас: в компонентных стилях используется --text */
+  --gray:  #C8C9CA;
+  --muted: #8A8B93;
+
+  /* отступы и радиусы */
+  --radius-sm: 6px;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --gap:       16px;
+
+  --font: 'JetBrains Mono', monospace;
+}
+
+/* ==================== Reset ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+a { color: inherit; }
+
+/* ==================== Типографика и текстовые утилиты ==================== */
+.h1  { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+.mono    { font-size: 12px; color: var(--muted); }
+.hint    { font-size: 12px; color: var(--muted); margin-top: 5px; }
+.explain { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.explain b { color: var(--gray); }
+.score   { font-weight: 700; }
+
+/* ==================== Сетки и layout-утилиты ==================== */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.row     { display: flex; align-items: center; gap: 14px; }
+.divider { height: 1px; background: var(--line); margin: 22px 0; }
+
+/* центрированная узкая колонка (auth, формы-потоки) */
+.center { max-width: 440px; margin: 0 auto; padding: 56px 24px; }
+
+/* ==================== Формы: обёртка поля ==================== */
+.field { margin-bottom: 16px; }
+.field > label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* ==================== Браузерный автозаполнение (белый фон → тёмный) ==================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--white);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg) inset;
+  box-shadow: 0 0 0 1000px var(--bg) inset;
+  caret-color: var(--white);
+  transition: background-color 999999s ease-in-out 0s;
+}

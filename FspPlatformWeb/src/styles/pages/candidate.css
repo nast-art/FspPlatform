@@ -1,0 +1,67 @@
+/* ==================== Стр. 4: тестовая сессия ==================== */
+
+/* каркас: вопрос + лента вопросов справа */
+.test-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  min-height: calc(100vh - 120px);
+}
+.test-tape {
+  border-left: 1px solid var(--line);
+  padding: 20px;
+  background: var(--panel);
+}
+.test-tape .tag { cursor: pointer; }
+.test-tape .tag.current { border-color: var(--blue); color: var(--white); }
+
+/* блок кода в задании */
+pre.code {
+  background: #14151A;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 12.5px;
+  overflow: auto;
+  color: var(--gray);
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+/* подсветка синтаксиса (классы из макета) */
+.kw  { color: var(--blue); }
+.fn  { color: #7C8CFF; }
+.str { color: #9ECE6A; }
+.cm  { color: #5A5B63; }
+
+/* таймер в шапке теста */
+.timer-danger { border-color: var(--red); background: var(--red-soft); }
+.timer-danger .d { background: var(--red); }
+
+/* ==================== Стр. 5: моя категория ==================== */
+.category-stats { margin-bottom: 18px; }
+
+/* ==================== Стр. 6: приглашения ==================== */
+.invitation-card { margin-bottom: 14px; }
+.invitation-card .salary {
+  font-size: 14px;
+  background: var(--blue-soft);
+  border-color: var(--blue);
+  color: var(--white);
+}
+
+/* ==================== Стр. 17: короткое задание ==================== */
+.task-page { max-width: 620px; }
+
+/* ==================== Адаптив ==================== */
+/* До 900px: лента вопросов уходит под вопрос — одна колонка.
+   Лента сворачивается в компактную полосу номеров, чтобы не растягивать тест. */
+@media (max-width: 900px) {
+  .test-layout { grid-template-columns: 1fr; }
+  .test-tape {
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding: 14px 16px;
+    order: -1; /* лента сверху — на телефоне удобнее прыгать между вопросами */
+  }
+  .test-tape .divider { margin: 10px 0; }
+  .test-tape .btn { margin-top: 10px; }
+}
