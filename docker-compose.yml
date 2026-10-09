@@ -14,9 +14,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./demo-data/sql/seed-demo.sql:/seed/seed-db.sql:ro
-      - ./demo-data/sql/seed-questions.sql:/seed/seed-questions.sql:ro
-      - ./demo-data/sql/seed-demo.sql:/seed/seed-demo.sql:ro
+      # Эти SQL-файлы выполняются PostgreSQL автоматически при первом запуске
+      # на пустом томе db_data, в алфавитном порядке.
+      - ./demo-data/sql/seed-db.sql:/docker-entrypoint-initdb.d/01-seed-db.sql:ro
+      - ./demo-data/sql/seed-questions.sql:/docker-entrypoint-initdb.d/02-seed-questions.sql:ro
+      - ./demo-data/sql/seed-demo.sql:/docker-entrypoint-initdb.d/03-seed-demo.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
