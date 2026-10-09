@@ -14,6 +14,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./demo-data/sql/seed-demo.sql:/seed/seed-db.sql:ro
       - ./demo-data/sql/seed-questions.sql:/seed/seed-questions.sql:ro
       - ./demo-data/sql/seed-demo.sql:/seed/seed-demo.sql:ro
     ports:
