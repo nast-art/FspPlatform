@@ -73,9 +73,6 @@ docker compose --profile runner pull
 # 3. Сборка и запуск
 docker compose up --build
 
-# 4. Демо-данные: сначала банк вопросов, затем демо-данные
-docker exec -i fsp_db psql -U postgres -d fsp_platform -f /seed/seed-questions.sql
-docker exec -i fsp_db psql -U postgres -d fsp_platform -f /seed/seed-demo.sql
 ```
 
 Открыть:
