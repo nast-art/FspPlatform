@@ -1,5 +1,3 @@
-version: "3.9"
-
 # ФСП Платформа — поднятие стенда одной командой: docker compose up --build
 # Перед запуском скопируйте .env.example в .env и заполните значения.
 
@@ -14,18 +12,45 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - db_data:/var/lib/postgresql/data
-      # Эти SQL-файлы выполняются PostgreSQL автоматически при первом запуске
-      # на пустом томе db_data, в алфавитном порядке.
+      # На пустом томе PostgreSQL запускает SQL-файлы по алфавиту.
+      # На существующем томе ensure-grade-tests.sql дополнительно применяет db-bootstrap.
       - ./demo-data/sql/seed-db.sql:/docker-entrypoint-initdb.d/01-seed-db.sql:ro
       - ./demo-data/sql/seed-questions.sql:/docker-entrypoint-initdb.d/02-seed-questions.sql:ro
-      - ./demo-data/sql/seed-demo.sql:/docker-entrypoint-initdb.d/03-seed-demo.sql:ro
+      - ./demo-data/sql/ensure-grade-tests.sql:/docker-entrypoint-initdb.d/03-ensure-grade-tests.sql:ro
+      - ./demo-data/sql/seed-demo.sql:/docker-entrypoint-initdb.d/04-seed-demo.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-fsp_platform}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-fsp_platform}"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Автоматически подготавливает вопросы/назначения для недостающих грейдов.
+  # Работает и с уже существующим db_data: init-файлы PostgreSQL там повторно не запускаются.
+  # Использует тот же образ postgres:15, дополнительных образов не требует.
+  db-bootstrap:
+    image: postgres:15
+    container_name: fsp_db_bootstrap
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fsp_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      FSP_BOOTSTRAP_REVISION: "2026-10-10-1"
+    volumes:
+      - ./demo-data/sql/ensure-grade-tests.sql:/sql/ensure-grade-tests.sql:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      set -eu
+      echo "[db-bootstrap] Ожидание подключения к PostgreSQL..."
+      until pg_isready -h db -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"; do sleep 2; done
+      echo "[db-bootstrap] Выполняем ensure-grade-tests.sql..."
+      PGPASSWORD="$${POSTGRES_PASSWORD}" psql -h db -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -v ON_ERROR_STOP=1 -f /sql/ensure-grade-tests.sql
+      echo "[db-bootstrap] SQL-подготовка завершена успешно."
 
   maildev:
     image: maildev/maildev:2.1.0
@@ -45,6 +70,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-bootstrap:
+        condition: service_completed_successfully
       maildev:
         condition: service_started
     environment:

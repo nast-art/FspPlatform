@@ -52,15 +52,16 @@ export default function CategoryPage() {
     return d
   }
 
-  // Последняя завершённая попытка на ТЕКУЩИЙ грейд этой специализации.
-  // history отсортирован по дате desc — первое совпадение и есть последняя.
-  function lastAttemptOnCurrentGrade(spec) {
+  // Последняя завершённая попытка по специализации независимо от target grade.
+  // После провала на Mid, а затем на Junior, следующим должен быть Стажёр,
+  // даже если фактический currentGradeId пока остаётся Mid.
+  function lastAttemptForSpecialization(spec) {
     const rows = history.filter(
       (h) =>
         h.specializationName === spec.specializationName &&
-        h.targetGradeName === spec.currentGradeName &&
         h.status === 'завершен'
     )
+    rows.sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))
     return rows.length > 0 ? rows[0] : null
   }
 
@@ -123,13 +124,21 @@ export default function CategoryPage() {
           МОИ СПЕЦИАЛИЗАЦИИ
         </div>
         {(specializations ?? []).map((spec) => {
-          // ТЗ: не прошли тест на уровень N — следующим доступен ТОЛЬКО тест на N−1.
-          // Кнопка на текущий грейд скрывается после провала; понижение доступно всегда.
-          const lower = lowerGradeOf(spec.currentGradeId)
-          const last = lastAttemptOnCurrentGrade(spec)
-          const failedHere = !isConfirmed(spec) && last && last.passed === false
-          // Провал на минимальном грейде: повтор открывается после кулдауна (90 дней).
-          const retryAt = failedHere && !lower ? retryDateOf(last) : null
+          // После любого последнего провала доступен уровень ниже именно того теста,
+          // который провален последним, а не уровень ниже сохранённого фактического грейда.
+          // Иначе после провала Mid -> Junior UI продолжал бы предлагать Junior,
+          // хотя API уже требует пройти Стажёра.
+          const last = lastAttemptForSpecialization(spec)
+          const failedGrade = last
+            ? sortedGrades.find((g) => g.name === last.targetGradeName) ??
+              sortedGrades.find((g) => g.id === spec.currentGradeId) ?? null
+            : null
+          const failedLatest = last?.passed === false
+          const lower = failedLatest && failedGrade
+            ? lowerGradeOf(failedGrade.id)
+            : lowerGradeOf(spec.currentGradeId)
+          // На минимальном грейде повтор открывается через 90 дней от последнего провала.
+          const retryAt = failedLatest && !lower ? retryDateOf(last) : null
           const retryOpen = retryAt != null && retryAt <= new Date()
           return (
             <div
@@ -146,6 +155,8 @@ export default function CategoryPage() {
                   {spec.lastTestAt
                     ? ` · тест: ${formatDate(spec.lastTestAt)}`
                     : ' · тест не пройден'}
+                  {failedLatest && last &&
+                    ` · последний тест на «${last.targetGradeName}» не пройден (${last.percent ?? '—'}%)`}
                   {!spec.canChangeGrade && spec.nextChangeAvailableAt && (
                     <>
                       {' '}
@@ -155,7 +166,35 @@ export default function CategoryPage() {
                 </div>
               </div>
               <div className="row" style={{ gap: 8, flexShrink: 0 }}>
-                {isConfirmed(spec) ? (
+                {failedLatest ? (
+                  <>
+                    <Badge color="red">не пройден</Badge>
+                    {lower ? (
+                      <button
+                        className="btn sm"
+                        disabled={startingSpecId === spec.specializationId}
+                        onClick={() => startTest(spec, lower.id)}
+                        title={`Последний провал — «${last.targetGradeName}». Следующим доступен уровень ниже.`}
+                      >
+                        {startingSpecId === spec.specializationId
+                          ? 'Готовим…'
+                          : `Не пройден — пройти на «${lower.name}»`}
+                      </button>
+                    ) : retryAt && !retryOpen ? (
+                      <Badge>повтор с {formatDate(retryAt)}</Badge>
+                    ) : (
+                      <button
+                        className="btn sm"
+                        disabled={startingSpecId === spec.specializationId || !failedGrade}
+                        onClick={() => failedGrade && startTest(spec, failedGrade.id)}
+                      >
+                        {startingSpecId === spec.specializationId
+                          ? 'Готовим…'
+                          : `Повторить тест на «${failedGrade?.name ?? last.targetGradeName}»`}
+                      </button>
+                    )}
+                  </>
+                ) : isConfirmed(spec) ? (
                   <>
                     <Badge color="green">подтверждён</Badge>
                     <button
@@ -180,52 +219,16 @@ export default function CategoryPage() {
                   </>
                 ) : (
                   <>
-                    {failedHere ? (
-                      <Badge color="red">не пройден</Badge>
-                    ) : (
-                      <Badge>ожидает тестирования</Badge>
-                    )}
-                    {/* После провала кнопка на текущий грейд скрыта, если есть уровень
-                        ниже (бэкенд всё равно отклонит, согласованность результата).
-                        На минимальном грейде повтор открывается после кулдауна 90 дней —
-                        тогда кнопка возвращается. */}
-                    {!failedHere && (
-                      <button
-                        className="btn sm"
-                        disabled={startingSpecId === spec.specializationId}
-                        onClick={() => startTest(spec, spec.currentGradeId)}
-                      >
-                        {startingSpecId === spec.specializationId
-                          ? 'Готовим…'
-                          : `Пройти тест на «${spec.currentGradeName}»`}
-                      </button>
-                    )}
-                    {failedHere && !lower && !retryOpen && retryAt && (
-                      <Badge>повтор с {formatDate(retryAt)}</Badge>
-                    )}
-                    {failedHere && !lower && retryOpen && (
-                      <button
-                        className="btn sm"
-                        disabled={startingSpecId === spec.specializationId}
-                        onClick={() => startTest(spec, spec.currentGradeId)}
-                      >
-                        {startingSpecId === spec.specializationId
-                          ? 'Готовим…'
-                          : `Повторить тест на «${spec.currentGradeName}»`}
-                      </button>
-                    )}
-                    {lower && (
-                      <button
-                        className={failedHere ? 'btn sm' : 'btn ghost sm'}
-                        disabled={startingSpecId === spec.specializationId}
-                        onClick={() => startTest(spec, lower.id)}
-                        title="ТЗ: не прошли заявленный уровень — следующим доступен тест на уровень ниже"
-                      >
-                        {failedHere
-                          ? `Не пройден — пройти на «${lower.name}»`
-                          : `на «${lower.name}»`}
-                      </button>
-                    )}
+                    <Badge>ожидает тестирования</Badge>
+                    <button
+                      className="btn sm"
+                      disabled={startingSpecId === spec.specializationId}
+                      onClick={() => startTest(spec, spec.currentGradeId)}
+                    >
+                      {startingSpecId === spec.specializationId
+                        ? 'Готовим…'
+                        : `Пройти тест на «${spec.currentGradeName}»`}
+                    </button>
                   </>
                 )}
               </div>
@@ -235,7 +238,7 @@ export default function CategoryPage() {
         <div className="notice" style={{ marginTop: 14 }}>
           Провал на уровне N — следующим доступен тест на N−1. Повышение — не
           чаще раза в 3 месяца. На минимальном грейде повтор откроется через
-          90 дней после провала — дата указана в списке выше.
+          90 дней после последнего провала — дата отображается в строке специализации.
         </div>
       </div>
 

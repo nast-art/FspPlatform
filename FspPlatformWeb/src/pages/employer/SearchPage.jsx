@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { matchingApi } from '../../api/matching.api'
 import { useDictionaries } from '../../shared/hooks/useDictionaries'
@@ -26,12 +26,22 @@ export default function SearchPage() {
   const [history, setHistory] = useState(null)
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState(null)
+  const searchInFlightRef = useRef(false)
+  const historyRequestRef = useRef(null)
 
   const loadHistory = useCallback(() => {
-    matchingApi
+    // React StrictMode в dev может повторно запускать эффект монтирования.
+    // Объединяем одинаковые запросы истории, пока первый ещё выполняется.
+    if (historyRequestRef.current) return historyRequestRef.current
+    const request = matchingApi
       .searchHistory(1, 10)
       .then(setHistory)
       .catch(() => {})
+      .finally(() => {
+        historyRequestRef.current = null
+      })
+    historyRequestRef.current = request
+    return request
   }, [])
 
   useEffect(() => {
@@ -51,7 +61,11 @@ export default function SearchPage() {
 
   if (dictLoading || !dictionaries) return <Spinner />
 
-  async function doSearch(overrides) {
+  async function doSearch(overrides = {}) {
+    // Не допускаем наложения долгих поисковых запросов при повторных кликах.
+    if (searchInFlightRef.current) return
+    searchInFlightRef.current = true
+
     // save — служебный флаг вызова, НЕ часть фильтров: не кладём его в state,
     // иначе следующий поиск по кнопке унаследует save=false и перестанет сохраняться.
     const { save, ...f } = { ...filters, ...overrides }
@@ -63,6 +77,9 @@ export default function SearchPage() {
 
     setSearching(true)
     setError(null)
+    // Отражаем применяемые фильтры сразу; во время запроса элементы панели
+    // блокируются, чтобы ответ старого запроса не перезаписал новые значения.
+    setFilters({ ...f, page })
     try {
       const res = await matchingApi.searchCandidates({
         specializationId: f.specializationId ? Number(f.specializationId) : undefined,
@@ -77,17 +94,18 @@ export default function SearchPage() {
         save: save === false || pageChangedOnly ? false : undefined,
       })
       setResult(res)
-      setFilters({ ...f, page })
       // «Мои запросы» обновляются после сохранённых поисков (не при листании)
       if (save !== false && !pageChangedOnly) loadHistory()
     } catch (e) {
       setError(e.message)
     } finally {
+      searchInFlightRef.current = false
       setSearching(false)
     }
   }
 
   function toggleSkill(id) {
+    if (searchInFlightRef.current) return
     setFilters((f) => ({
       ...f,
       skillIds: f.skillIds.includes(id)
@@ -123,6 +141,7 @@ export default function SearchPage() {
   }
 
   function clearAll() {
+    if (searchInFlightRef.current) return
     const empty = {
       specializationId: '',
       gradeId: '',
@@ -138,6 +157,8 @@ export default function SearchPage() {
   }
 
   async function openSaved(requestId) {
+    if (searchInFlightRef.current) return
+    searchInFlightRef.current = true
     setSearching(true)
     setError(null)
     try {
@@ -164,6 +185,7 @@ export default function SearchPage() {
     } catch (e) {
       setError(e.message)
     } finally {
+      searchInFlightRef.current = false
       setSearching(false)
     }
   }
@@ -181,6 +203,7 @@ export default function SearchPage() {
           <label>Специализация</label>
           <select
             className="input"
+            disabled={searching}
             value={filters.specializationId}
             onChange={(e) =>
               setFilters((f) => ({ ...f, specializationId: e.target.value, categoryId: '', page: 1 }))
@@ -199,6 +222,7 @@ export default function SearchPage() {
           <label>Грейд</label>
           <select
             className="input"
+            disabled={searching}
             value={filters.gradeId}
             onChange={(e) => setFilters((f) => ({ ...f, gradeId: e.target.value, categoryId: '', page: 1 }))}
           >
@@ -215,6 +239,7 @@ export default function SearchPage() {
           <label>Категория</label>
           <select
             className="input"
+            disabled={searching}
             value={filters.categoryId}
             onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value, page: 1 }))}
           >
@@ -240,7 +265,7 @@ export default function SearchPage() {
               <span
                 key={s.id}
                 className={`tag ${filters.skillIds.includes(s.id) ? 'sel' : ''}`}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: searching ? 'wait' : 'pointer', opacity: searching ? 0.6 : 1 }}
                 onClick={() => toggleSkill(s.id)}
               >
                 {s.name}
@@ -253,6 +278,7 @@ export default function SearchPage() {
           <label>Город</label>
           <input
             className="input"
+            disabled={searching}
             value={filters.city}
             onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
             onKeyDown={(e) => e.key === 'Enter' && doSearch({ city: filters.city })}
@@ -263,6 +289,7 @@ export default function SearchPage() {
           <label>Поиск по ФИО / о себе</label>
           <input
             className="input"
+            disabled={searching}
             value={filters.query}
             onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
             onKeyDown={(e) => e.key === 'Enter' && doSearch({ query: filters.query })}
@@ -273,7 +300,8 @@ export default function SearchPage() {
           <span>Только с достижениями ФСП</span>
           <span
             className={`toggle ${filters.hasFsp ? '' : 'off'}`}
-            onClick={() => setFilters((f) => ({ ...f, hasFsp: !f.hasFsp, page: 1 }))}
+            style={{ pointerEvents: searching ? 'none' : 'auto', opacity: searching ? 0.6 : 1 }}
+            onClick={() => !searching && setFilters((f) => ({ ...f, hasFsp: !f.hasFsp, page: 1 }))}
           >
             <i />
           </span>
@@ -297,8 +325,8 @@ export default function SearchPage() {
               <div
                 key={h.requestId}
                 className="kv"
-                style={{ cursor: 'pointer' }}
-                onClick={() => openSaved(h.requestId)}
+                style={{ cursor: searching ? 'wait' : 'pointer', opacity: searching ? 0.6 : 1 }}
+                onClick={() => !searching && openSaved(h.requestId)}
                 title="Открыть сохранённую подборку"
               >
                 <span className="hint">
@@ -327,7 +355,7 @@ export default function SearchPage() {
             {searching && <span className="hint">обновляем…</span>}
           </div>
           {chips.length > 0 && (
-            <button className="btn ghost sm" onClick={clearAll}>
+            <button className="btn ghost sm" onClick={clearAll} disabled={searching}>
               Сбросить всё ✕
             </button>
           )}
@@ -343,7 +371,7 @@ export default function SearchPage() {
                 className="tag sel"
                 style={{ cursor: 'pointer' }}
                 title="Убрать фильтр"
-                onClick={() => doSearch({ ...c.clear, page: 1 })}
+                onClick={() => !searching && doSearch({ ...c.clear, page: 1 })}
               >
                 {c.label} ✕
               </span>
@@ -470,7 +498,7 @@ export default function SearchPage() {
               <div className="pager" style={{ marginTop: 16 }}>
                 <span
                   className={`nav ${filters.page <= 1 ? 'disabled' : ''}`}
-                  onClick={() => filters.page > 1 && doSearch({ page: filters.page - 1 })}
+                  onClick={() => !searching && filters.page > 1 && doSearch({ page: filters.page - 1 })}
                 >
                   ← Назад
                 </span>
@@ -493,7 +521,7 @@ export default function SearchPage() {
                         key={p}
                         className={p === filters.page ? 'cur' : ''}
                         style={{ cursor: p === filters.page ? 'default' : 'pointer' }}
-                        onClick={() => p !== filters.page && doSearch({ page: p })}
+                        onClick={() => !searching && p !== filters.page && doSearch({ page: p })}
                       >
                         {p}
                       </span>
@@ -502,7 +530,7 @@ export default function SearchPage() {
                 <span
                   className={`nav ${filters.page >= totalPages ? 'disabled' : ''}`}
                   onClick={() =>
-                    filters.page < totalPages && doSearch({ page: filters.page + 1 })
+                    !searching && filters.page < totalPages && doSearch({ page: filters.page + 1 })
                   }
                 >
                   Вперёд →
