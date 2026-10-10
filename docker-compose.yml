@@ -100,7 +100,7 @@ services:
     volumes:
       - api_uploads:/app/Data
       - coderuns_data:/coderuns     # общий том: API пишет код, раннеры его исполняют
-      - //var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
 
   frontend:
     build:

@@ -22,9 +22,10 @@ namespace FspPlatformApi.Services.Testing;
 ///    тест на N−1. Пересдача на N запрещена до подтверждения грейда ниже: иначе повторные
 ///    попытки «до победного» размывают согласованность грейда (критерий жюри).
 ///    Подтверждённый грейд пересдавать можно; повышение после подтверждения — с кулдауном 90 дней.
-/// 9) РЕЗУЛЬТАТ (Q&A менторов): тест подтверждает ЗАЯВЛЕННЫЙ (target) грейд. Автоповышения нет —
-///    повышение — отдельный тест после кулдауна 90 дней. Грейд после провала не понижается
-///    принудительно (ТЗ): кандидат сам проходит тест на уровень ниже.
+/// 9) РЕЗУЛЬТАТ: успешно пройденный тест подтверждает целевой грейд. При провале автоматически
+///    назначается ближайший более низкий грейд, он остаётся неподтверждённым; кандидат может
+///    пройти тест на этот уровень. Последовательные провалы опускают его до «Стажёра».
+///    Повышение после подтверждённого грейда по-прежнему требует отдельного теста и кулдауна 90 дней.
 /// </summary>
 public class TestService : ITestService
 {
@@ -437,10 +438,41 @@ public class TestService : ITestService
         }
         else
         {
-            // ТЗ: после провала следующим доступен тест на уровень ниже (пересдача на том же
-            // уровне запрещена до подтверждения грейда ниже — см. StartTestAsync).
-            message = $"Порог: {threshold}%, результат: {percent}%. " +
-                      "Следующим доступен тест на грейд ниже — пройдите его, чтобы закрепить уровень.";
+            // При провале сразу отображаем ближайший более низкий грейд в поиске работодателя.
+            // Этот грейд НЕ считается подтверждённым: для подтверждения кандидат должен пройти
+            // тест на него. Если провален тест «Стажёра», оставляем минимальный грейд и его процент.
+            var specialization = await _db.CandidateSpecializations.FirstAsync(x =>
+                x.CandidateId == candidateId && x.SpecializationId == s.SpecializationId);
+
+            var lowerGrade = await _db.Grades
+                .Where(g => g.IsActive && g.Rank < s.TargetGrade.Rank)
+                .OrderByDescending(g => g.Rank)
+                .FirstOrDefaultAsync();
+
+            var fallbackGrade = lowerGrade ?? s.TargetGrade;
+            var currentGrade = await _db.Grades.FirstAsync(g => g.Id == specialization.CurrentGradeId);
+
+            // Не повышаем кандидата за счёт проваленного теста, если он уже имеет более низкий грейд.
+            if (currentGrade.Rank < fallbackGrade.Rank)
+                fallbackGrade = currentGrade;
+
+            s.ResultingGradeId = fallbackGrade.Id;
+            resultingGradeName = fallbackGrade.Name;
+            await ApplyFallbackGradeAsync(candidateId, s, fallbackGrade.Id);
+
+            if (fallbackGrade.Id == s.TargetGradeId)
+            {
+                message = $"Порог: {threshold}%, результат: {percent}%. " +
+                          $"Тест на минимальный грейд «{fallbackGrade.Name}» не пройден. " +
+                          $"В поиске будет отображаться грейд «{fallbackGrade.Name}» с результатом {percent}%. " +
+                          $"Повторная попытка доступна через {GradeCooldownDays} дней.";
+            }
+            else
+            {
+                message = $"Тест на грейд «{s.TargetGrade.Name}» не пройден. " +
+                          $"Назначен грейд ниже — «{fallbackGrade.Name}» ({percent}% за последнюю попытку); " +
+                          $"он пока не подтверждён. Следующим доступен тест на «{fallbackGrade.Name}».";
+            }
         }
 
         await _db.SaveChangesAsync();
@@ -453,6 +485,52 @@ public class TestService : ITestService
         };
     }
 
+    private async Task ApplyFallbackGradeAsync(Guid candidateId, TestSession s, short resultingGradeId)
+    {
+        var cs = await _db.CandidateSpecializations.FirstAsync(x =>
+            x.CandidateId == candidateId && x.SpecializationId == s.SpecializationId);
+        var now = DateTime.UtcNow;
+
+        // Записываем смену грейда только если фактический грейд действительно изменился.
+        // Используем существующую причину, поскольку reason связан внешним ключом со statuses.
+        if (cs.CurrentGradeId != resultingGradeId)
+        {
+            _db.GradeChangeHistories.Add(new GradeChangeHistory
+            {
+                CandidateId = candidateId,
+                SpecializationId = s.SpecializationId,
+                OldGradeId = cs.CurrentGradeId,
+                NewGradeId = resultingGradeId,
+                Reason = "пересдача_понижение",
+                TestSessionId = s.Id
+            });
+
+            cs.CurrentGradeId = resultingGradeId;
+            cs.LastGradeChangeAt = now;
+        }
+
+        // Грейд назначен для отображения/подбора, но проваленный тест его не подтверждает.
+        cs.Status = "грейд_понижен";
+        cs.LastTestAt = now;
+
+        var category = await _db.Categories.FirstOrDefaultAsync(c =>
+            c.SpecializationId == s.SpecializationId && c.GradeId == resultingGradeId);
+        if (category is not null)
+        {
+            var existing = await _db.CandidateCategories.FirstOrDefaultAsync(x =>
+                x.CandidateId == candidateId && x.CategoryId == category.Id);
+            if (existing is null)
+            {
+                _db.CandidateCategories.Add(new CandidateCategory
+                {
+                    CandidateId = candidateId,
+                    CategoryId = category.Id,
+                    IsPrimary = cs.IsPrimary
+                });
+            }
+        }
+    }
+
     private async Task ApplyGradeAsync(Guid candidateId, TestSession s, short resultingGradeId)
     {
         var cs = await _db.CandidateSpecializations.FirstAsync(x =>
@@ -461,18 +539,23 @@ public class TestService : ITestService
         var isFirst = !await _db.GradeChangeHistories.AnyAsync(h =>
             h.CandidateId == candidateId && h.SpecializationId == s.SpecializationId);
 
-        var reason = isFirst ? "первичное_тестирование"
-            : resultingGradeId > cs.CurrentGradeId ? "пересдача_повышение" : "пересдача_понижение";
-
-        _db.GradeChangeHistories.Add(new GradeChangeHistory
+        // Не создаём ложную запись о смене грейда, если тест подтвердил уже назначенный
+        // уровень после автоматического понижения. Первая оценка всё равно фиксируется.
+        if (isFirst || resultingGradeId != cs.CurrentGradeId)
         {
-            CandidateId = candidateId,
-            SpecializationId = s.SpecializationId,
-            OldGradeId = cs.CurrentGradeId,
-            NewGradeId = resultingGradeId,
-            Reason = reason,
-            TestSessionId = s.Id
-        });
+            var reason = isFirst ? "первичное_тестирование"
+                : resultingGradeId > cs.CurrentGradeId ? "пересдача_повышение" : "пересдача_понижение";
+
+            _db.GradeChangeHistories.Add(new GradeChangeHistory
+            {
+                CandidateId = candidateId,
+                SpecializationId = s.SpecializationId,
+                OldGradeId = cs.CurrentGradeId,
+                NewGradeId = resultingGradeId,
+                Reason = reason,
+                TestSessionId = s.Id
+            });
+        }
 
         cs.CurrentGradeId = resultingGradeId;
         cs.Status = "грейд_подтвержден";

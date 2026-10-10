@@ -9,6 +9,12 @@ RUN dotnet publish -c Release -o /app/publish --no-restore
 # ---------- runtime ----------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
+
+# docker CLI для CodeRunnerService (docker-out-of-docker через сокет хоста)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends docker-cli \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 # каталог загрузок (PDF-резюме) — проброшен volume-ом
 RUN mkdir -p /app/Data

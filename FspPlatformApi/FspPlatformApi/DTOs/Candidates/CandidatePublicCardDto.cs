@@ -56,8 +56,8 @@ public record CandidatePublicCardDto
 
     /// <summary>Лучший процент по пройденным тестам (подтверждённый грейд).</summary>
     public decimal? BestTestPercent { get; init; }
-    // Лучшая попытка среди всех завершённых тестов (включая проваленные) — только для
-    // показа; в ранжировании участвует BestTestPercent (подтверждённые тесты).
+    // Процент последней завершённой попытки по основной/отображаемой специализации.
+    // Имя JSON-поля оставлено BestAttemptPercent для совместимости фронтенда.
     public decimal? BestAttemptPercent { get; init; }
 
     /// <summary>Итоговый скор ранжирования (70% тест + до 30 ФСП + до 10 полнота профиля).</summary>

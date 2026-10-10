@@ -108,6 +108,7 @@ public class SearchService : ISearchService
             .ToList();
 
         var candidateIds = candidates.Select(c => c.cs.CandidateId).Distinct().ToList();
+        var specializationByCandidate = candidates.ToDictionary(c => c.cs.CandidateId, c => c.cs.SpecializationId);
         var bestPassedByCandidate = new Dictionary<Guid, decimal>();
         var bestAttemptByCandidate = new Dictionary<Guid, decimal?>();
         var fspWeightById = new Dictionary<Guid, decimal>();
@@ -115,21 +116,12 @@ public class SearchService : ISearchService
 
         if (candidateIds.Count > 0)
         {
-            // Две групповые выборки вместо двух SQL-запросов на каждого кандидата.
-            var passedTestRows = await _db.TestSessions.AsNoTracking()
-                .Where(t => candidateIds.Contains(t.CandidateId)
-                    && t.Status == "завершен" && t.Passed == true)
-                .GroupBy(t => t.CandidateId)
-                .Select(g => new { CandidateId = g.Key, Percent = g.Max(t => (decimal?)t.Percent) })
-                .ToListAsync();
-            bestPassedByCandidate = passedTestRows.ToDictionary(x => x.CandidateId, x => x.Percent ?? 0m);
-
-            var attemptRows = await _db.TestSessions.AsNoTracking()
-                .Where(t => candidateIds.Contains(t.CandidateId) && t.Status == "завершен")
-                .GroupBy(t => t.CandidateId)
-                .Select(g => new { CandidateId = g.Key, Percent = g.Max(t => (decimal?)t.Percent) })
-                .ToListAsync();
-            bestAttemptByCandidate = attemptRows.ToDictionary(x => x.CandidateId, x => x.Percent);
+            // Считаем результат именно по специализации, показанной в карточке.
+            // Для колонки теста берём последнюю попытку, а не максимум за всю историю:
+            // иначе после автоматического понижения рядом с новым грейдом отображался бы старый процент.
+            var testPercentages = await LoadTestPercentagesAsync(specializationByCandidate);
+            bestPassedByCandidate = testPercentages.BestPassed;
+            bestAttemptByCandidate = testPercentages.LatestAttempt;
 
             var fspIds = candidates.Where(c => c.u.FspId.HasValue)
                 .Select(c => c.u.FspId!.Value).Distinct().ToList();
@@ -435,20 +427,12 @@ public class SearchService : ISearchService
             .GroupBy(x => x.CandidateId)
             .ToDictionary(g => g.Key, g => g.First());
 
-        var passedRows = await _db.TestSessions.AsNoTracking()
-            .Where(t => candidateIds.Contains(t.CandidateId)
-                && t.Status == "завершен" && t.Passed == true)
-            .GroupBy(t => t.CandidateId)
-            .Select(g => new { CandidateId = g.Key, Percent = g.Max(t => (decimal?)t.Percent) })
-            .ToListAsync();
-        var bestPassedByCandidate = passedRows.ToDictionary(x => x.CandidateId, x => x.Percent);
-
-        var attemptRows = await _db.TestSessions.AsNoTracking()
-            .Where(t => candidateIds.Contains(t.CandidateId) && t.Status == "завершен")
-            .GroupBy(t => t.CandidateId)
-            .Select(g => new { CandidateId = g.Key, Percent = g.Max(t => (decimal?)t.Percent) })
-            .ToListAsync();
-        var bestAttemptByCandidate = attemptRows.ToDictionary(x => x.CandidateId, x => x.Percent);
+        var specializationByCandidate = specializationsByCandidate
+            .ToDictionary(x => x.Key, x => x.Value.SpecializationId);
+        var testPercentages = await LoadTestPercentagesAsync(specializationByCandidate);
+        var bestPassedByCandidate = testPercentages.BestPassed
+            .ToDictionary(x => x.Key, x => (decimal?)x.Value);
+        var bestAttemptByCandidate = testPercentages.LatestAttempt;
 
         var skillRows = await _db.CandidateSkills.AsNoTracking()
             .Where(s => candidateIds.Contains(s.CandidateId))
@@ -554,6 +538,44 @@ public class SearchService : ISearchService
             Filters = filters ?? new Dictionary<string, object>(),
             CreatedAt = request.CreatedAt
         };
+    }
+
+    private async Task<(Dictionary<Guid, decimal> BestPassed, Dictionary<Guid, decimal?> LatestAttempt)>
+        LoadTestPercentagesAsync(IReadOnlyDictionary<Guid, short> specializationByCandidate)
+    {
+        if (specializationByCandidate.Count == 0)
+            return (new Dictionary<Guid, decimal>(), new Dictionary<Guid, decimal?>());
+
+        var candidateIds = specializationByCandidate.Keys.ToList();
+        var sessions = await _db.TestSessions.AsNoTracking()
+            .Where(t => candidateIds.Contains(t.CandidateId) && t.Status == "завершен")
+            .Select(t => new
+            {
+                t.CandidateId,
+                t.SpecializationId,
+                t.Passed,
+                t.Percent,
+                t.FinishedAt
+            })
+            .ToListAsync();
+
+        var relevantSessions = sessions.Where(t =>
+            specializationByCandidate.TryGetValue(t.CandidateId, out var specializationId) &&
+            specializationId == t.SpecializationId).ToList();
+
+        var bestPassed = relevantSessions
+            .Where(t => t.Passed == true)
+            .GroupBy(t => t.CandidateId)
+            .ToDictionary(g => g.Key, g => g.Max(t => t.Percent ?? 0m));
+
+        var latestAttempt = relevantSessions
+            .GroupBy(t => t.CandidateId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(t => t.FinishedAt ?? DateTime.MinValue)
+                    .First().Percent);
+
+        return (bestPassed, latestAttempt);
     }
 
 }

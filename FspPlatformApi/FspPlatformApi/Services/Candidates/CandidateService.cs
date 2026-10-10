@@ -237,16 +237,21 @@ public class CandidateService : ICandidateService
             categoryName = (await _db.Categories.FirstOrDefaultAsync(
                 c => c.SpecializationId == cs.SpecializationId && c.GradeId == cs.CurrentGradeId))?.DisplayName;
 
-        var bestTest = await _db.TestSessions
-            .Where(t => t.CandidateId == candidateId && t.Status == "завершен" && t.Passed == true)
+        var bestTest = cs is null ? null : await _db.TestSessions
+            .Where(t => t.CandidateId == candidateId
+                && t.SpecializationId == cs.SpecializationId
+                && t.Status == "завершен" && t.Passed == true)
             .MaxAsync(t => (decimal?)t.Percent);
 
-        // Для показа: лучшая попытка среди ВСЕХ завершённых тестов (включая проваленные) —
-        // иначе у завалившего тест в карточке неверный «—»/0%. В ранжировании по-прежнему
-        // участвует только bestTest (подтверждённые тесты).
-        var bestAttempt = await _db.TestSessions
-            .Where(t => t.CandidateId == candidateId && t.Status == "завершен")
-            .MaxAsync(t => (decimal?)t.Percent);
+        // В карточке показываем последнюю попытку по основной специализации, чтобы после
+        // автоматического понижения грейда рядом с ним отображался актуальный процент.
+        var bestAttempt = cs is null ? null : await _db.TestSessions
+            .Where(t => t.CandidateId == candidateId
+                && t.SpecializationId == cs.SpecializationId
+                && t.Status == "завершен")
+            .OrderByDescending(t => t.FinishedAt)
+            .Select(t => (decimal?)t.Percent)
+            .FirstOrDefaultAsync();
 
         var rank = await _db.VCategoryRankings.FirstOrDefaultAsync(r => r.CandidateId == candidateId);
 
